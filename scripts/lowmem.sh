@@ -1,46 +1,46 @@
 #!/usr/bin/env bash
-# Prepara (ou desfaz) o sistema para compilar o Android com pouca RAM.
-# Uso: sudo bash lowmem.sh on    -> antes da build   (ZRAM_SIZE=24G para mudar o tamanho)
-#      sudo bash lowmem.sh off   -> depois da build
+# Prepares (or reverts) the system to build Android with little RAM.
+# Usage: sudo bash lowmem.sh on    -> before the build   (ZRAM_SIZE=24G to change the size)
+#        sudo bash lowmem.sh off   -> after the build
 set -euo pipefail
 
 ZRAM_SIZE="${ZRAM_SIZE:-16G}"
 
-zram_swaps() {   # dispositivos zram em uso como swap
+zram_swaps() {   # zram devices in use as swap
     swapon --show=NAME --noheadings | grep '^/dev/zram' || true
 }
 
 case "${1:-}" in
 on)
     if [ -n "$(zram_swaps)" ]; then
-        echo "zram já ativo como swap: $(zram_swaps | tr '\n' ' ')"
+        echo "zram already active as swap: $(zram_swaps | tr '\n' ' ')"
     else
-        # zram: swap comprimido na RAM, com prioridade acima do swap em disco
+        # zram: compressed swap in RAM, with higher priority than disk swap
         modprobe zram
         dev=$(zramctl --find --size "$ZRAM_SIZE" --algorithm zstd)
         mkswap "$dev" >/dev/null
         swapon -p 100 "$dev"
     fi
 
-    # Com zram, o kernel deve preferir mandar páginas para o swap (zram é rápido)
-    # e ler uma página por vez (page-cluster=0), em vez de blocos de 8.
+    # With zram, the kernel should prefer swapping pages out (zram is fast)
+    # and read one page at a time (page-cluster=0) instead of blocks of 8.
     sysctl -q vm.swappiness=180 vm.page-cluster=0
 
-    # earlyoom mata o soong_build com 10% de swap livre; o OOM killer do kernel
-    # continua como última proteção.
+    # earlyoom kills soong_build at 10% free swap; the kernel's OOM killer
+    # remains as the last line of defense.
     systemctl stop earlyoom 2>/dev/null || true
 
     swapon --show
     free -h
 
-    # Confere o resultado em vez de confiar que deu certo
-    [ -n "$(zram_swaps)" ] || { echo "ERRO: zram não ficou ativo" >&2; exit 1; }
-    [ "$(sysctl -n vm.swappiness)" = 180 ] || { echo "ERRO: swappiness não foi aplicado" >&2; exit 1; }
-    ! systemctl is-active -q earlyoom || { echo "ERRO: earlyoom continua ativo" >&2; exit 1; }
-    echo "OK: modo de pouca memória ativo"
+    # Check the result instead of assuming it worked
+    [ -n "$(zram_swaps)" ] || { echo "ERROR: zram did not become active" >&2; exit 1; }
+    [ "$(sysctl -n vm.swappiness)" = 180 ] || { echo "ERROR: swappiness was not applied" >&2; exit 1; }
+    ! systemctl is-active -q earlyoom || { echo "ERROR: earlyoom is still active" >&2; exit 1; }
+    echo "OK: low-memory mode active"
     ;;
 off)
-    # Desfaz qualquer zram em uso como swap (não só o criado por este script)
+    # Undo any zram in use as swap (not only the one created by this script)
     for d in $(zram_swaps); do
         swapoff "$d"
         zramctl --reset "$d"
@@ -51,7 +51,7 @@ off)
     swapon --show
     ;;
 *)
-    echo "Uso: sudo bash $0 on|off" >&2
+    echo "Usage: sudo bash $0 on|off" >&2
     exit 1
     ;;
 esac

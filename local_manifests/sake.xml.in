@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Modelo: o scripts/sync.sh gera .repo/local_manifests/sake.xml trocando @GITHUB_USER@ e @TREE_BRANCH@ pelos valores do config.sh -->
+<!-- Template: scripts/sync.sh generates .repo/local_manifests/sake.xml, replacing @GITHUB_USER@ and @TREE_BRANCH@ with the values from config.sh -->
 <manifest>
   <remote name="gh" fetch="https://github.com" />
 
-  <!-- Árvore do aparelho: o SEU fork, com os commits do Infinity X -->
+  <!-- Device tree: YOUR fork, with the Infinity X commits -->
   <project path="device/asus/sake"
            name="@GITHUB_USER@/android_device_asus_sake"
            remote="gh" revision="@TREE_BRANCH@" />
@@ -13,8 +13,7 @@
            name="LineageOS/android_kernel_asus_sm8350"
            remote="gh" revision="lineage-24.0" />
 
-
-  <!-- Blobs proprietários -->
+  <!-- Proprietary blobs -->
   <project path="vendor/asus/sake"
            name="TheMuppets/proprietary_vendor_asus_sake"
            remote="gh" revision="lineage-24.0" />

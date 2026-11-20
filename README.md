@@ -1,140 +1,150 @@
-# Infinity X para o Zenfone 8 (sake)
+# Infinity X for the Zenfone 8 (sake)
 
-Scripts e patches para compilar o [Project Infinity X](https://github.com/ProjectInfinity-X)
-(Android 17) para o ASUS Zenfone 8 (`sake`, `ASUS_I006D`), com base na árvore
-do LineageOS 24.0. Build não oficial.
+Scripts and patches to build [Project Infinity X](https://github.com/ProjectInfinity-X)
+(Android 17) for the ASUS Zenfone 8 (`sake`, `ASUS_I006D`), based on the
+LineageOS 24.0 device tree. Unofficial build.
 
-Duas variantes, ambas sem mudanças no Infinity (só o necessário para o
-aparelho):
+Two variants, both with Infinity X left as is (only what the device needs):
 
-| Variante | O que é |
+| Variant | What it is |
 |---|---|
-| `vanilla` | Infinity X sem Google (`WITH_GAPPS=false`) |
-| `gapps` | Infinity X com os apps do Google (`WITH_GAPPS=true`, `vendor/pixel/gms`) |
+| `vanilla` | Infinity X without Google (`WITH_GAPPS=false`) |
+| `gapps` | Infinity X with the Google apps (`WITH_GAPPS=true`, `vendor/pixel/gms`) |
 
-## O que muda em relação ao LineageOS
+## Changes from LineageOS
 
-A árvore do aparelho é um fork de
+The device tree is a fork of
 [LineageOS/android_device_asus_sake](https://github.com/LineageOS/android_device_asus_sake)
-com 4 commits, na branch `17` de
+with 4 commits, on the `17` branch of
 [thiagoneo/android_device_asus_sake](https://github.com/thiagoneo/android_device_asus_sake)
-(os mesmos commits estão em `device-tree/`):
+(the same commits are in `device-tree/`):
 
-1. adaptação ao Infinity X (`infinity_sake.mk`, informações de "Sobre o telefone");
-2. `armv8-2a` para a segunda arquitetura (exigido pelo build do Infinity);
-3. configuração opcional para compilar com pouca RAM (`lowmem.mk`);
-4. a variante (com ou sem Google) é escolhida na hora da build.
+1. Infinity X bring-up (`infinity_sake.mk`, "About phone" info);
+2. `armv8-2a` for the second arch (required by the Infinity build);
+3. optional configuration to build with little RAM (`lowmem.mk`);
+4. the variant (with or without Google) is chosen at build time.
 
-Kernel e arquivos proprietários são os do LineageOS
-(`LineageOS/android_kernel_asus_sm8350` e `TheMuppets/proprietary_vendor_asus_sake`),
-incluindo o firmware (33.0210.0210.296), gravado a cada instalação, como no
-LineageOS.
+Kernel and proprietary files are the LineageOS ones
+(`LineageOS/android_kernel_asus_sm8350` and `TheMuppets/proprietary_vendor_asus_sake`),
+including the firmware (33.0210.0210.296), which is flashed on every install,
+as on LineageOS.
 
-## Estrutura
+## Layout
 
 ```
 .
-├── config.sh                 # caminhos, usuário do GitHub, -j, limites
+├── config.sh                 # paths, GitHub user, -j, limits
 ├── local_manifests/
-│   └── sake.xml.in           # modelo do local manifest (árvore + kernel + blobs)
-├── patches/                  # patches em projetos do source (reaplicados após o sync)
-│   └── build/soong/          # deixa o GOGC chegar ao soong_build (menos RAM)
-├── device-tree/              # commits do fork da árvore
+│   └── sake.xml.in           # local manifest template (tree + kernel + blobs)
+├── patches/                  # patches to source projects (reapplied after sync)
+│   └── build/soong/          # passes GOGC on to soong_build (less RAM)
+├── device-tree/              # the device tree fork commits
 ├── scripts/
-│   ├── check-build-reqs.sh   # verificação inicial da máquina
-│   ├── sync.sh               # repo sync + reaplica patches + checagens
-│   ├── build.sh              # checagens + build + copia artefatos / resume erros
-│   ├── update-tree.sh        # traz atualizações do LineageOS para o fork
-│   ├── cleanup.sh            # limpeza: zips, builds/, logs/, ccache, git gc, snapshots
-│   └── lowmem.sh             # zram + earlyoom off (on/off, com sudo)
-├── builds/AAAA-MM-DD-<variante>/   # zip, boot.img, vendor_boot.img, SHA256SUMS
-└── logs/                     # build-*.log e errors-*.txt
+│   ├── check-build-reqs.sh   # initial machine check
+│   ├── sync.sh               # repo sync + reapply patches + checks
+│   ├── build.sh              # checks + build + copy artifacts / summarize errors
+│   ├── update-tree.sh        # brings LineageOS updates into the fork
+│   ├── cleanup.sh            # cleanup: zips, builds/, logs/, ccache, git gc, snapshots
+│   └── lowmem.sh             # zram + earlyoom off (on/off, with sudo)
+├── builds/YYYY-MM-DD-<variant>/   # zip, boot.img, vendor_boot.img, SHA256SUMS
+└── logs/                     # build-*.log and errors-*.txt
 ```
 
-`patches/<caminho>/*.patch` é aplicado no projeto `<caminho>` do source.
-`variants/<variante>/patches/<caminho>/` (não usado neste repositório) funciona
-igual, mas só entra na build daquela variante.
+`patches/<path>/*.patch` is applied to the `<path>` project of the source.
+`variants/<variant>/patches/<path>/` (not used in this repository) works the
+same way, but only goes into that variant's build.
 
-Ajustes pessoais podem ir num `config.local.sh` (fora do git), lido depois do
+Personal overrides can go in a `config.local.sh` (not in git), read after
 `config.sh`.
 
-## Primeira vez
+## First time
 
-1. Source do Infinity X (veja as instruções do projeto), em `SRC` do
-   `config.sh` (padrão: `~/android/infinity`):
+1. Infinity X source (see the project's instructions), in `SRC` from
+   `config.sh` (default: `~/android/infinity`):
 
    ```
    repo init -u https://github.com/ProjectInfinity-X/manifest -b 17 --git-lfs --depth=1
    ```
 
-2. `bash scripts/check-build-reqs.sh` para conferir a máquina.
-3. `bash scripts/sync.sh` (gera o local manifest, sincroniza e aplica os patches).
+2. `bash scripts/check-build-reqs.sh` to check the machine.
+3. `bash scripts/sync.sh` (generates the local manifest, syncs and applies the patches).
 
-Para usar o seu próprio fork da árvore: faça o fork do LineageOS, aplique os
-commits de `device-tree/` na branch `17` e mude `GITHUB_USER` no `config.sh`.
+To use your own fork of the tree: fork the LineageOS one, apply the commits
+from `device-tree/` on a `17` branch and change `GITHUB_USER` in `config.sh`.
 
-## Rotina de build
+## Build routine
 
-Com ~16 GB de RAM, compile fora da sessão gráfica (TTY, Ctrl+Alt+F3), em bash:
+With ~16 GB of RAM, build outside the graphical session (TTY, Ctrl+Alt+F3), in bash:
 
 ```
 sudo systemctl isolate multi-user.target
 sudo ZRAM_SIZE=24G bash scripts/lowmem.sh on
 tmux new -s build
 bash scripts/sync.sh
-bash scripts/build.sh vanilla     # ou: gapps
+bash scripts/build.sh vanilla     # or: gapps
 ```
 
-Depois:
+Afterwards:
 
 ```
 sudo bash scripts/lowmem.sh off
 sudo systemctl isolate graphical.target
 ```
 
-Se a build falhar, o resumo fica em `logs/errors-*.txt`. Rode só
-`bash scripts/build.sh` de novo (sem sync): o que já foi compilado é
-reaproveitado.
+If the build fails, the summary is in `logs/errors-*.txt`. Just run
+`bash scripts/build.sh` again (no sync): whatever was already built is reused.
 
-- Depois do `lunch`, o `build.sh` confere os pacotes da variante (sem Google
-  na vanilla, Play Store na gapps).
-- As variantes usam o mesmo `out/`. Ao trocar de variante, o `build.sh` roda
-  `m installclean` e o Soong refaz a análise: conte ~1–1,5 h a mais.
-- `LOWMEM=true` (`config.sh`) liga o `lowmem.mk`, `GOGC=30` e
-  `ALLOW_MISSING_DEPENDENCIES`. Com 32 GB de RAM ou mais, use `LOWMEM=false`.
+- After `lunch`, `build.sh` checks the variant's packages (no Google on
+  vanilla, Play Store on gapps).
+- The variants share the same `out/`. When switching variants, `build.sh` runs
+  `m installclean` and Soong redoes its analysis: expect ~1–1.5 h more.
+- `LOWMEM=true` (`config.sh`) enables `lowmem.mk`, `GOGC=30` and
+  `ALLOW_MISSING_DEPENDENCIES`. With 32 GB of RAM or more, use `LOWMEM=false`.
 
-## Instalação
+## Installation
 
-Primeira vez (ou ao trocar de variante, com formatação dos dados):
+First time (or when switching variants, which needs a data format):
 
-1. `fastboot flash vendor_boot vendor_boot.img` e `fastboot flash boot boot.img`
-   (o recovery vem no `boot.img`);
-2. no recovery: *Apply update* → *Apply from ADB*, `adb sideload <zip>`;
+1. `fastboot flash vendor_boot vendor_boot.img` and `fastboot flash boot boot.img`
+   (the recovery is in `boot.img`);
+2. in recovery: *Apply update* → *Apply from ADB*, `adb sideload <zip>`;
 3. *Format data / factory reset*.
 
-Atualizações da mesma variante: app Atualizador → ⋮ → *Atualização local*,
-escolhendo o zip (sem perder dados).
+Updates within the same variant: Updater app → ⋮ → *Local update*, picking the
+zip (keeps your data).
 
-Trocar entre vanilla e gapps exige formatar os dados.
+Switching between vanilla and gapps requires formatting data.
 
-## Quando o LineageOS atualizar a árvore do sake
+## When LineageOS updates the sake tree
 
-O `sync.sh` avisa. Então `bash scripts/update-tree.sh`: faz rebase dos
-commits sobre o upstream e envia ao fork. Se houver conflito, desfaz tudo.
+`sync.sh` warns about it. Then run `bash scripts/update-tree.sh`: it rebases
+the commits onto upstream and pushes to the fork. On a conflict, it undoes
+everything.
 
-## Limpeza
+## Cleanup
 
 ```
-bash scripts/cleanup.sh                 # zips antigos, builds/ e logs/ antigos, ccache
-bash scripts/cleanup.sh --gc            # + git gc no source (lento)
-bash scripts/cleanup.sh --snapshots     # + snapshots do snapper que contêm as pastas do port
+bash scripts/cleanup.sh                 # old zips, old builds/ and logs/, ccache
+bash scripts/cleanup.sh --gc            # + git gc on the source (slow)
+bash scripts/cleanup.sh --snapshots     # + snapper snapshots that contain the port folders
 ```
 
-Cada etapa mostra o que vai apagar e pede confirmação. Quantidades em
-`config.sh` (`KEEP_BUILDS`, `KEEP_LOG_DAYS`, `KEEP_SNAPSHOTS`).
+Each step shows what it will delete and asks for confirmation. Amounts are set
+in `config.sh` (`KEEP_BUILDS`, `KEEP_LOG_DAYS`, `KEEP_SNAPSHOTS`).
 
-## Notas
+### Keeping builds/ out of snapshots
 
-- Se um patch deixar de encaixar após um sync, o script para com erro e não
-  deixa nada pela metade.
-- As builds são assinadas com as test-keys do AOSP.
+On btrfs, snapshots of a subvolume do not include nested subvolumes. Turning
+`builds/` into its own subvolume keeps the zips out of the snapshots:
+
+```
+mv builds builds.old
+btrfs subvolume create builds
+mv builds.old/* builds/ && rmdir builds.old
+```
+
+## Notes
+
+- If a patch no longer applies after a sync, the script stops with an error and
+  leaves nothing half-done.
+- Builds are signed with the AOSP test-keys.

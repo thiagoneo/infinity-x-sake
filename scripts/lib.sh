@@ -1,4 +1,4 @@
-# Funções comuns aos scripts. Carregado com: source "$(dirname "$0")/lib.sh"
+# Shared functions for the scripts. Loaded with: source "$(dirname "$0")/lib.sh"
 
 PORT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$PORT/config.sh"
@@ -6,12 +6,12 @@ if [ -f "$PORT/config.local.sh" ]; then
     source "$PORT/config.local.sh"
 fi
 
-die()  { printf '\n[ERRO]  %s\n' "$*" >&2; exit 1; }
-warn() { printf '[AVISO] %s\n' "$*" >&2; }
+die()  { printf '\n[ERROR] %s\n' "$*" >&2; exit 1; }
+warn() { printf '[WARN]  %s\n' "$*" >&2; }
 info() { printf '==> %s\n' "$*"; }
 
-# Assunto (linha "Subject:") de um arquivo .patch. O git quebra assuntos
-# longos em mais de uma linha (as de continuação começam com espaço).
+# Subject ("Subject:" line) of a .patch file. git wraps long subjects over
+# several lines (continuation lines start with a space).
 patch_subject() {
     awk '/^Subject: / {
              s = $0
@@ -22,15 +22,15 @@ patch_subject() {
          }' "$1"
 }
 
-# O commit do patch já está no projeto? (procura o assunto nos últimos 50 commits)
-patch_applied() {   # $1 = diretório do projeto, $2 = arquivo .patch
+# Is the patch's commit already in the project? (looks for the subject in the last 50 commits)
+patch_applied() {   # $1 = project directory, $2 = .patch file
     local subject
     subject="$(patch_subject "$2")"
     git -C "$1" log -n 50 --format=%s | grep -qxF "$subject"
 }
 
-# Percorre patches/<caminho do projeto>/*.patch e chama $1 para cada um
-# com: <diretório do projeto> <arquivo .patch>
+# Walks patches/<project path>/*.patch and calls $1 for each one
+# with: <project directory> <.patch file>
 for_each_patch() {
     local p dir
     while IFS= read -r p; do
@@ -40,12 +40,12 @@ for_each_patch() {
     done < <(find "$PORT/patches" -name '*.patch' | sort)
 }
 
-# ---------- Patches por variante ----------
-# variants/<variante>/patches/<caminho do projeto>/*.patch só entram na build
-# daquela variante. Nas outras, o projeto volta ao estado do manifest
-# (m/$MANIFEST_BRANCH) + os patches globais de patches/, se houver.
+# ---------- Per-variant patches ----------
+# variants/<variant>/patches/<project path>/*.patch only go into that
+# variant's build. In the others, the project goes back to the manifest state
+# (m/$MANIFEST_BRANCH) + the global patches from patches/, if any.
 
-# Projetos (caminho relativo ao source) com patches em $1
+# Projects (path relative to the source) with patches under $1
 patch_projects() {
     local p
     [ -d "$1" ] || return 0
@@ -55,26 +55,26 @@ patch_projects() {
     done < <(find "$1" -name '*.patch') | sort -u
 }
 
-# Patches de um projeto dentro de uma raiz de patches, em ordem
-patch_files() {   # $1 = raiz (patches/ ou variants/<v>/patches), $2 = projeto
+# A project's patches under a patch root, in order
+patch_files() {   # $1 = root (patches/ or variants/<v>/patches), $2 = project
     [ -d "$1/$2" ] || return 0
     find "$1/$2" -maxdepth 1 -name '*.patch' | sort
 }
 
-# Deixa cada projeto que tem patches de alguma variante exatamente com:
-# commit do manifest + patches globais + patches da variante $1.
-# Só mexe no projeto se os commits atuais forem diferentes do esperado. A
-# comparação é pelo conteúdo (git patch-id), não pelo título: um patch
-# corrigido com o mesmo título também é reaplicado.
-sync_variant_patches() {   # $1 = variante
+# Leaves every project that has patches in some variant at exactly:
+# manifest commit + global patches + patches of variant $1.
+# A project is only touched if its current commits differ from the expected
+# ones. The comparison is by content (git patch-id), not by subject: a fixed
+# patch with the same subject is reapplied too.
+sync_variant_patches() {   # $1 = variant
     local proj dir base want have p
     local -a files
     while IFS= read -r proj; do
         dir="$SRC/$proj"
         base="m/$MANIFEST_BRANCH"
-        [ -d "$dir" ] || die "Projeto $proj (de variants/) não existe no source"
+        [ -d "$dir" ] || die "Project $proj (from variants/) does not exist in the source"
         git -C "$dir" rev-parse -q --verify "$base" >/dev/null \
-            || die "$proj não tem a referência $base (confira MANIFEST_BRANCH no config.sh)"
+            || die "$proj has no $base ref (check MANIFEST_BRANCH in config.sh)"
 
         mapfile -t files < <(patch_files "$PORT/patches" "$proj"; \
                              patch_files "$PORT/variants/$1/patches" "$proj")
@@ -87,17 +87,17 @@ sync_variant_patches() {   # $1 = variante
                 | git -C "$dir" patch-id --stable | cut -d' ' -f1)"
 
         if [ "$want" = "$have" ]; then
-            info "$proj: já está como a variante $1 precisa"
+            info "$proj: already as variant $1 needs"
             continue
         fi
         [ -z "$(git -C "$dir" status --porcelain --untracked-files=no)" ] \
-            || die "$proj tem alterações não commitadas. Resolva antes (git -C $dir status)"
-        info "$proj: ajustando para a variante $1 (${#files[@]} patch(es))"
-        git -C "$dir" reset -q --hard "$base" || die "Falha no reset de $proj"
+            || die "$proj has uncommitted changes. Sort them out first (git -C $dir status)"
+        info "$proj: switching to variant $1 (${#files[@]} patch(es))"
+        git -C "$dir" reset -q --hard "$base" || die "Reset of $proj failed"
         for p in "${files[@]}"; do
             if ! git -C "$dir" am -q --3way "$p"; then
                 git -C "$dir" am --abort || true
-                die "O patch ${p#"$PORT/"} não encaixa mais em $proj. Me mande o erro acima."
+                die "Patch ${p#"$PORT/"} no longer applies to $proj. See the error above."
             fi
         done
     done < <(for d in "$PORT"/variants/*/patches; do patch_projects "$d"; done | sort -u)
@@ -105,15 +105,15 @@ sync_variant_patches() {   # $1 = variante
 
 confirm() {
     local r
-    read -r -p "$1 [s/N] " r
-    [[ "$r" == [sSyY] ]]
+    read -r -p "$1 [y/N] " r
+    [[ "$r" == [yY] ]]
 }
 
-# O repo baixa com --depth=1 (só o último commit). Comparar com o upstream ou
-# fazer rebase precisa do histórico completo da árvore: baixa se faltar.
-ensure_full_history() {   # $1 = diretório do projeto, $2 = URL, $3 = branch
+# repo syncs with --depth=1 (last commit only). Comparing with upstream or
+# rebasing needs the device tree's full history: fetch it if missing.
+ensure_full_history() {   # $1 = project directory, $2 = URL, $3 = branch
     if [ "$(git -C "$1" rev-parse --is-shallow-repository)" = true ]; then
-        info "Baixando o histórico completo de ${1#"$SRC/"}"
+        info "Fetching the full history of ${1#"$SRC/"}"
         git -C "$1" fetch -q --unshallow "$2" "$3"
     fi
 }

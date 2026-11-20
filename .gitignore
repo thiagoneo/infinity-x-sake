@@ -1,10 +1,9 @@
-# Gerados
+# Generated
 builds/
 logs/
 old/
 
-# Local (não publicado): ajustes pessoais, variante microG, JoyPixels e
-# firmware .332. Veja README-local.md.
+# Local only (not published)
 config.local.sh
 README-local.md
 TODO.md

@@ -1,39 +1,39 @@
-# Configuração do port Infinity X para o Zenfone 8 (sake).
-# Lido por todos os scripts em scripts/. Só variáveis, sem lógica.
-# Ajustes pessoais (que não vão para o git) podem ficar em config.local.sh,
-# lido logo depois deste arquivo.
+# Infinity X port settings for the Zenfone 8 (sake).
+# Read by every script in scripts/. Variables only, no logic.
+# Personal overrides (kept out of git) can go in config.local.sh, which is
+# read right after this file.
 
-# Raiz do source (onde está .repo/)
+# Source root (where .repo/ is)
 SRC="$HOME/android/infinity"
 
-# Seu usuário no GitHub (dono do fork da árvore do sake)
+# Your GitHub user (owner of the sake device tree fork)
 GITHUB_USER="thiagoneo"
 
-# Branch do fork com os commits do Infinity
+# Fork branch with the Infinity commits
 TREE_BRANCH="17"
 
-# Branch do manifest do Infinity (o repo marca a revisão de cada projeto em m/<branch>)
+# Infinity manifest branch (repo tags each project's revision as m/<branch>)
 MANIFEST_BRANCH="17"
 
-# Upstream da árvore (para checar se o LineageOS atualizou o sake)
+# Device tree upstream (to check whether LineageOS updated sake)
 UPSTREAM_URL="https://github.com/LineageOS/android_device_asus_sake"
 UPSTREAM_BRANCH="lineage-24.0"
 
 # Build
-JOBS=4               # -j da compilação (14 GB de RAM: 4 é seguro)
-SYNC_JOBS=6          # -j do repo sync
-LOWMEM=true          # ativa lowmem.mk + GOGC=30 + ALLOW_MISSING_DEPENDENCIES
-DEFAULT_VARIANT="vanilla"  # vanilla | gapps (build.sh sem argumento)
+JOBS=4               # build -j (4 is safe with 14 GB of RAM)
+SYNC_JOBS=6          # repo sync -j
+LOWMEM=true          # enables lowmem.mk + GOGC=30 + ALLOW_MISSING_DEPENDENCIES
+DEFAULT_VARIANT="vanilla"  # vanilla | gapps (build.sh with no argument)
 
 # ccache
 CCACHE_DIR="$HOME/android/ccache"
 CCACHE_SIZE="20G"
 
-# Verificações antes da build
-MIN_FREE_GB=40       # espaço livre mínimo em $SRC (build incremental)
-MIN_MEM_GB=45        # RAM + swap (inclui zram) mínimo com LOWMEM=true
+# Pre-build checks
+MIN_FREE_GB=40       # minimum free space in $SRC (incremental build)
+MIN_MEM_GB=45        # minimum RAM + swap (zram included) with LOWMEM=true
 
-# Limpeza (scripts/cleanup.sh)
-KEEP_BUILDS=3        # pastas mantidas em builds/ (as mais recentes)
-KEEP_LOG_DAYS=30     # logs/ mais antigos que isso são apagados
-KEEP_SNAPSHOTS=2     # snapshots mantidos por config do snapper (os mais recentes)
+# Cleanup (scripts/cleanup.sh)
+KEEP_BUILDS=3        # folders kept in builds/ (the newest)
+KEEP_LOG_DAYS=30     # logs/ older than this are deleted
+KEEP_SNAPSHOTS=2     # snapshots kept per snapper config (the newest)
