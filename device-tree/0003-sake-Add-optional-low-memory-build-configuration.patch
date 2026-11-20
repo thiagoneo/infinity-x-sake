@@ -1,0 +1,70 @@
+From 4b32c50f12ffc7261d5b030bf5b72cd4d39e96d7 Mon Sep 17 00:00:00 2001
+From: James <james@localhost>
+Date: Sat, 7 Nov 2026 13:36:53 -0300
+Subject: [PATCH 3/3] sake: Add optional low-memory build configuration
+
+Building with SAKE_LOWMEM_BUILD=true skips Soong analysis of trees the
+device never builds, allowing builds on hosts with ~16 GB of RAM.
+---
+ infinity_sake.mk |  5 +++++
+ lowmem.mk        | 32 ++++++++++++++++++++++++++++++++
+ 2 files changed, 37 insertions(+)
+ create mode 100644 lowmem.mk
+
+diff --git a/infinity_sake.mk b/infinity_sake.mk
+index 59daa07..50cce1e 100644
+--- a/infinity_sake.mk
++++ b/infinity_sake.mk
+@@ -31,6 +31,11 @@ PRODUCT_SYSTEM_PROPERTIES += \
+     ro.infinity.soc=Snapdragon 888 \
+     ro.infinity.camera=64MP + 12MP
+ 
++# Optional low-memory build host configuration
++ifeq ($(SAKE_LOWMEM_BUILD),true)
++include device/asus/sake/lowmem.mk
++endif
++
+ PRODUCT_GMS_CLIENTID_BASE := android-asus
+ 
+ PRODUCT_SYSTEM_DEVICE := ASUS_I006D
+diff --git a/lowmem.mk b/lowmem.mk
+new file mode 100644
+index 0000000..7b973bb
+--- /dev/null
++++ b/lowmem.mk
+@@ -0,0 +1,32 @@
++#
++# SPDX-License-Identifier: Apache-2.0
++#
++# Optional configuration for build hosts with little RAM (~16 GB).
++# Enabled only when building with SAKE_LOWMEM_BUILD=true, together with
++# ALLOW_MISSING_DEPENDENCIES=true.
++#
++# Skips Soong analysis of trees this device never builds (test suites,
++# other devices/emulators, Trusty TEE, other Qualcomm platforms), which
++# lowers soong_build peak memory. The longest matching prefix wins, so
++# entries without "-" re-include subdirectories that are still needed.
++#
++
++PRODUCT_SOURCE_ROOT_DIRS += \
++    -cts/ \
++    cts/libs/json/ \
++    -test/ \
++    test/app_compat/csuite/ \
++    test/vts-testcase/hal/treble/vintf/ \
++    -trusty/ \
++    -external/trusty/ \
++    -device/google/ \
++    -device/google_car/ \
++    -device/generic/car/ \
++    -device/generic/goldfish/ \
++    -device/generic/trusty/ \
++    -hardware/qcom-caf/sm8150/ \
++    -hardware/qcom-caf/sm8250/ \
++    -hardware/qcom-caf/sm8450 \
++    -hardware/qcom-caf/sm8550/ \
++    -hardware/qcom-caf/sm8650/ \
++    -hardware/qcom-caf/sm8750/
+-- 
+2.43.0
+

@@ -1,0 +1,27 @@
+From 2b82cfd9321ec80c0632a485f475e621beb5f30e Mon Sep 17 00:00:00 2001
+From: thiagoneo <sousathiago@protonmail.com>
+Date: Sat, 7 Nov 2026 17:50:07 +0000
+Subject: [PATCH] sake: Let the build choose the GApps variant
+
+Don't hardcode WITH_GAPPS in the device tree, so the same tree builds
+both the GApps and the vanilla variant (WITH_GAPPS=true/false from the
+build environment; Infinity X defaults to true).
+---
+ infinity_sake.mk | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/infinity_sake.mk b/infinity_sake.mk
+index 50cce1e..106674f 100644
+--- a/infinity_sake.mk
++++ b/infinity_sake.mk
+@@ -13,7 +13,6 @@ $(call inherit-product, device/asus/sake/device.mk)
+ 
+ # Project Infinity X flags (must be set before inheriting vendor/infinity)
+ INFINITY_MAINTAINER := James
+-WITH_GAPPS := false
+ TARGET_HAS_UDFPS := true
+ 
+ # Inherit from the Project Infinity X configuration.
+-- 
+2.34.1
+

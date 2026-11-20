@@ -1,0 +1,16 @@
+# Gerados
+builds/
+logs/
+old/
+
+# Local (não publicado): ajustes pessoais, variante microG, JoyPixels e
+# firmware .332. Veja README-local.md.
+config.local.sh
+README-local.md
+TODO.md
+local_manifests/sake-microg.xml.in
+variants/
+vendor-extra/
+patches/vendor/
+scripts/get-firmware.sh
+scripts/get-joypixels.sh

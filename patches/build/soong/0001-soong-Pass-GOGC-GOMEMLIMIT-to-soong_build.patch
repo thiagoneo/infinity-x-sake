@@ -1,0 +1,33 @@
+From cb746bab8743657bd0e88f95e7702e98e6b9b8b2 Mon Sep 17 00:00:00 2001
+From: James <james@localhost>
+Date: Thu, 5 Nov 2026 18:32:38 -0300
+Subject: [PATCH] soong: Pass GOGC/GOMEMLIMIT to soong_build
+
+soong_build runs under env -i, so Go GC tuning from the environment
+never reaches it. Forward GOGC and GOMEMLIMIT when set, to lower the
+peak heap of the analysis phase on hosts with little RAM.
+---
+ ui/build/soong.go | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/ui/build/soong.go b/ui/build/soong.go
+index 4521b4a..0196343 100644
+--- a/ui/build/soong.go
++++ b/ui/build/soong.go
+@@ -215,6 +215,13 @@ func (pb PrimaryBuilderFactory) primaryBuilderInvocation(config Config) bootstra
+ 
+ 	commonArgs = append(commonArgs, "-l", filepath.Join(pb.config.FileListDir(), "Android.bp.list"))
+ 	invocationEnv := make(map[string]string)
++	// Low-memory hosts: pass Go GC tuning through to soong_build, which is
++	// otherwise started with a clean environment (env -i).
++	for _, v := range []string{"GOGC", "GOMEMLIMIT"} {
++		if val, ok := os.LookupEnv(v); ok {
++			invocationEnv[v] = val
++		}
++	}
+ 	if pb.debugPort != "" {
+ 		//debug mode
+ 		commonArgs = append(commonArgs, "--delve_listen", pb.debugPort,
+-- 
+2.43.0
+
